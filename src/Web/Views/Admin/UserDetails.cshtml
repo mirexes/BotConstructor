@@ -1,0 +1,330 @@
+@model BotConstructor.Web.Models.AdminUserDetailsViewModel
+
+@{
+    ViewData["Title"] = $"Пользователь: {Model.User.Email}";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="@Url.Action("Users")" class="btn btn-secondary mb-3">← Назад к списку</a>
+            <h2>Пользователь: @Model.User.Email</h2>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- User Info Card -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Основная информация</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>ID:</th>
+                            <td>@Model.User.Id</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>@Model.User.Email</td>
+                        </tr>
+                        <tr>
+                            <th>Имя:</th>
+                            <td>@(Model.User.FirstName ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <th>Фамилия:</th>
+                            <td>@(Model.User.LastName ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <th>Email подтвержден:</th>
+                            <td>
+                                @if (Model.User.EmailConfirmed)
+                                {
+                                    <span class="badge bg-success">Да</span>
+                                    @if (Model.User.EmailConfirmedAt.HasValue)
+                                    {
+                                        <small class="text-muted">(@Model.User.EmailConfirmedAt.Value.ToString("dd.MM.yyyy HH:mm"))</small>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning">Нет</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Статус:</th>
+                            <td>
+                                @if (Model.User.IsBlocked)
+                                {
+                                    <span class="badge bg-danger">Заблокирован</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Активен</span>
+                                }
+                            </td>
+                        </tr>
+                        @if (Model.User.IsBlocked)
+                        {
+                            <tr>
+                                <th>Дата блокировки:</th>
+                                <td>@Model.User.BlockedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+                            </tr>
+                            <tr>
+                                <th>Причина блокировки:</th>
+                                <td>@Model.User.BlockedReason</td>
+                            </tr>
+                        }
+                        <tr>
+                            <th>Дата регистрации:</th>
+                            <td>@Model.User.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                        <tr>
+                            <th>Последний вход:</th>
+                            <td>@(Model.User.LastLoginAt?.ToString("dd.MM.yyyy HH:mm") ?? "Никогда")</td>
+                        </tr>
+                        <tr>
+                            <th>Последний IP:</th>
+                            <td>@(Model.User.LastLoginIp ?? "-")</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Действия</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Confirm Email -->
+                    @if (!Model.User.EmailConfirmed)
+                    {
+                        <form method="post" asp-action="ConfirmEmail" asp-route-id="@Model.User.Id" class="mb-3">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100">Подтвердить Email</button>
+                        </form>
+                    }
+
+                    <!-- Block/Unblock User -->
+                    @if (Model.User.IsBlocked)
+                    {
+                        <form method="post" asp-action="UnblockUser" asp-route-id="@Model.User.Id" class="mb-3">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-warning w-100">Разблокировать пользователя</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-danger w-100 mb-3" data-bs-toggle="modal" data-bs-target="#blockUserModal">
+                            Заблокировать пользователя
+                        </button>
+                    }
+
+                    <!-- Reset Password -->
+                    <button type="button" class="btn btn-warning w-100 mb-3" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                        Сбросить пароль
+                    </button>
+
+                    <!-- Delete User (SuperAdmin only) -->
+                    @if (User.IsInRole("SuperAdmin"))
+                    {
+                        <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                            Удалить пользователя
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Roles Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Роли пользователя</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        @foreach (var role in Model.UserRoles)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-primary">@role.Name</span>
+                                <form method="post" asp-action="RemoveRole" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@Model.User.Id" />
+                                    <input type="hidden" name="roleId" value="@role.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+
+                    @if (Model.AvailableRoles.Any())
+                    {
+                        <hr />
+                        <h6>Добавить роль:</h6>
+                        <form method="post" asp-action="AssignRole">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="userId" value="@Model.User.Id" />
+                            <div class="input-group">
+                                <select name="roleId" class="form-select">
+                                    @foreach (var role in Model.AvailableRoles)
+                                    {
+                                        <option value="@role.Id">@role.Name</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-primary">Добавить</button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login History -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">История входов</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>IP адрес</th>
+                                    <th>User Agent</th>
+                                    <th>Статус</th>
+                                    <th>Причина ошибки</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var attempt in Model.LoginHistory)
+                                {
+                                    <tr class="@(attempt.IsSuccessful ? "" : "table-danger")">
+                                        <td>@attempt.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                        <td>@attempt.IpAddress</td>
+                                        <td><small>@(attempt.UserAgent ?? "-")</small></td>
+                                        <td>
+                                            @if (attempt.IsSuccessful)
+                                            {
+                                                <span class="badge bg-success">Успешно</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Ошибка</span>
+                                            }
+                                        </td>
+                                        <td>@(attempt.FailureReason ?? "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Block User Modal -->
+<div class="modal fade" id="blockUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="BlockUser">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="UserId" value="@Model.User.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Блокировка пользователя</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Причина блокировки:</label>
+                        <textarea name="Reason" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Заблокировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ResetPassword">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="UserId" value="@Model.User.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Сброс пароля</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Новый пароль:</label>
+                        <input type="password" name="NewPassword" class="form-control" required minlength="8" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Подтверждение пароля:</label>
+                        <input type="password" name="ConfirmPassword" class="form-control" required minlength="8" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-warning">Сбросить пароль</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="DeleteUser" asp-route-id="@Model.User.Id">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Удаление пользователя</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-danger"><strong>ВНИМАНИЕ!</strong> Это действие необратимо.</p>
+                    <p>Вы действительно хотите удалить пользователя <strong>@Model.User.Email</strong>?</p>
+                    <p>Все данные пользователя будут удалены из системы.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Удалить пользователя</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
