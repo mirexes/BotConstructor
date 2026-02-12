@@ -1,0 +1,194 @@
+@model BotConstructor.Web.Models.AdminUsersViewModel
+
+@{
+    ViewData["Title"] = "Управление пользователями";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Управление пользователями</h2>
+            <p class="text-muted">Всего пользователей: @Model.TotalCount</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Users">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Поиск</label>
+                            <input type="text" class="form-control" name="searchTerm" value="@Model.SearchTerm" placeholder="Email, ID, Имя">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            <select class="form-select" name="isBlocked">
+                                <option value="">Все</option>
+                                <option value="false" selected="@(Model.IsBlocked == false)">Активные</option>
+                                <option value="true" selected="@(Model.IsBlocked == true)">Заблокированные</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <select class="form-select" name="emailConfirmed">
+                                <option value="">Все</option>
+                                <option value="true" selected="@(Model.EmailConfirmed == true)">Подтвержден</option>
+                                <option value="false" selected="@(Model.EmailConfirmed == false)">Не подтвержден</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label class="form-label">От даты</label>
+                            <input type="date" class="form-control" name="registeredAfter" value="@Model.RegisteredAfter?.ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label class="form-label">До даты</label>
+                            <input type="date" class="form-control" name="registeredBefore" value="@Model.RegisteredBefore?.ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">Фильтр</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Имя</th>
+                            <th>Роли</th>
+                            <th>Email</th>
+                            <th>Статус</th>
+                            <th>Дата регистрации</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            <tr>
+                                <td>@user.Id</td>
+                                <td>@user.Email</td>
+                                <td>@(user.FirstName ?? "-") @(user.LastName ?? "")</td>
+                                <td>
+                                    @foreach (var userRole in user.UserRoles)
+                                    {
+                                        <span class="badge bg-primary">@userRole.Role.Name</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-success">Подтвержден</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">Не подтвержден</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.IsBlocked)
+                                    {
+                                        <span class="badge bg-danger">Заблокирован</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Активен</span>
+                                    }
+                                </td>
+                                <td>@user.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>
+                                    <a href="@Url.Action("UserDetails", new { id = user.Id })" class="btn btn-sm btn-info">Детали</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Users", new
+                            {
+                                page = Model.CurrentPage - 1,
+                                pageSize = Model.PageSize,
+                                searchTerm = Model.SearchTerm,
+                                isBlocked = Model.IsBlocked,
+                                emailConfirmed = Model.EmailConfirmed,
+                                registeredAfter = Model.RegisteredAfter,
+                                registeredBefore = Model.RegisteredBefore
+                            })">Предыдущая</a>
+                        </li>
+
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Users", new
+                                {
+                                    page = i,
+                                    pageSize = Model.PageSize,
+                                    searchTerm = Model.SearchTerm,
+                                    isBlocked = Model.IsBlocked,
+                                    emailConfirmed = Model.EmailConfirmed,
+                                    registeredAfter = Model.RegisteredAfter,
+                                    registeredBefore = Model.RegisteredBefore
+                                })">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Users", new
+                            {
+                                page = Model.CurrentPage + 1,
+                                pageSize = Model.PageSize,
+                                searchTerm = Model.SearchTerm,
+                                isBlocked = Model.IsBlocked,
+                                emailConfirmed = Model.EmailConfirmed,
+                                registeredAfter = Model.RegisteredAfter,
+                                registeredBefore = Model.RegisteredBefore
+                            })">Следующая</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
