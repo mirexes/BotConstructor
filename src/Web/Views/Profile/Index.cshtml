@@ -1,0 +1,106 @@
+@model BotConstructor.Core.Entities.User
+@{
+    ViewData["Title"] = "Личный кабинет";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <!-- Боковое меню -->
+        <div class="list-group">
+            <a asp-action="Index" class="list-group-item list-group-item-action active">
+                Профиль
+            </a>
+            <a asp-action="Edit" class="list-group-item list-group-item-action">
+                Редактировать профиль
+            </a>
+            <a asp-action="ChangePassword" class="list-group-item list-group-item-action">
+                Сменить пароль
+            </a>
+            <a asp-action="Settings" class="list-group-item list-group-item-action">
+                Настройки
+            </a>
+            <a asp-action="Sessions" class="list-group-item list-group-item-action">
+                Активные сессии
+            </a>
+            <a asp-action="DeleteAccount" class="list-group-item list-group-item-action text-danger">
+                Удалить аккаунт
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2>Мой профиль</h2>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Имя:</div>
+                    <div class="col-sm-9">@(Model.FirstName ?? "Не указано")</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Фамилия:</div>
+                    <div class="col-sm-9">@(Model.LastName ?? "Не указано")</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Email:</div>
+                    <div class="col-sm-9">
+                        @Model.Email
+                        @if (Model.EmailConfirmed)
+                        {
+                            <span class="badge bg-success ms-2">Подтвержден</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark ms-2">Не подтвержден</span>
+                        }
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Роли:</div>
+                    <div class="col-sm-9">
+                        @foreach (var userRole in Model.UserRoles)
+                        {
+                            <span class="badge bg-primary me-1">@userRole.Role.Name</span>
+                        }
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Статус:</div>
+                    <div class="col-sm-9">
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Активен</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Неактивен</span>
+                        }
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Дата регистрации:</div>
+                    <div class="col-sm-9">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+                @if (Model.LastLoginAt.HasValue)
+                {
+                    <div class="row mb-3">
+                        <div class="col-sm-3 fw-bold">Последний вход:</div>
+                        <div class="col-sm-9">@Model.LastLoginAt.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                    </div>
+                }
+            </div>
+            <div class="card-footer">
+                <a asp-action="Edit" class="btn btn-primary">Редактировать профиль</a>
+                <a asp-action="ChangePassword" class="btn btn-outline-secondary">Сменить пароль</a>
+            </div>
+        </div>
+    </div>
+</div>

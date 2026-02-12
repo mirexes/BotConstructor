@@ -22,4 +22,6 @@ public class User : BaseEntity
     public ICollection<LoginAttempt> LoginAttempts { get; set; } = new List<LoginAttempt>();
     public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
     public ICollection<EmailConfirmationToken> EmailConfirmationTokens { get; set; } = new List<EmailConfirmationToken>();
+    public ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
+    public UserSettings? UserSettings { get; set; }
 }

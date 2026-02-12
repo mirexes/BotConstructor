@@ -43,6 +43,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
 var app = builder.Build();

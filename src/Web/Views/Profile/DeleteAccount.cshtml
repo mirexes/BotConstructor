@@ -1,0 +1,91 @@
+@{
+    ViewData["Title"] = "Удаление аккаунта";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <!-- Боковое меню -->
+        <div class="list-group">
+            <a asp-action="Index" class="list-group-item list-group-item-action">
+                Профиль
+            </a>
+            <a asp-action="Edit" class="list-group-item list-group-item-action">
+                Редактировать профиль
+            </a>
+            <a asp-action="ChangePassword" class="list-group-item list-group-item-action">
+                Сменить пароль
+            </a>
+            <a asp-action="Settings" class="list-group-item list-group-item-action">
+                Настройки
+            </a>
+            <a asp-action="Sessions" class="list-group-item list-group-item-action">
+                Активные сессии
+            </a>
+            <a asp-action="DeleteAccount" class="list-group-item list-group-item-action active text-danger">
+                Удалить аккаунт
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="text-danger">Удаление аккаунта</h2>
+
+        <div class="alert alert-danger">
+            <h5 class="alert-heading">⚠️ Внимание!</h5>
+            <p><strong>Это действие необратимо!</strong></p>
+            <hr />
+            <p class="mb-0">
+                После удаления аккаунта:
+            </p>
+            <ul>
+                <li>Вы потеряете доступ к своему профилю</li>
+                <li>Все ваши боты будут остановлены</li>
+                <li>Активные подписки будут отменены</li>
+                <li>Восстановление аккаунта будет невозможно</li>
+            </ul>
+        </div>
+
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Подтверждение удаления</h5>
+            </div>
+            <div class="card-body">
+                <p>Если вы уверены, что хотите удалить свой аккаунт, нажмите кнопку ниже.</p>
+                <p class="text-muted">Мы сожалеем, что вы покидаете нас. Если у вас есть замечания или предложения по улучшению платформы, пожалуйста, свяжитесь с нашей службой поддержки.</p>
+
+                <form asp-action="DeleteAccountConfirmed" method="post" class="mt-4" id="deleteForm">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                        <label class="form-check-label" for="confirmDelete">
+                            Я понимаю, что это действие необратимо и подтверждаю удаление аккаунта
+                        </label>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                            Удалить аккаунт навсегда
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Включаем кнопку удаления только после установки чекбокса
+        document.getElementById('confirmDelete').addEventListener('change', function() {
+            document.getElementById('deleteBtn').disabled = !this.checked;
+        });
+
+        // Дополнительное подтверждение перед удалением
+        document.getElementById('deleteForm').addEventListener('submit', function(e) {
+            if (!confirm('ВЫ АБСОЛЮТНО УВЕРЕНЫ? Это действие НЕЛЬЗЯ отменить!')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+}
