@@ -137,8 +137,7 @@ public class UserRepository : IUserRepository
         var userRole = new UserRole
         {
             UserId = userId,
-            RoleId = roleId,
-            CreatedAt = DateTime.UtcNow
+            RoleId = roleId
         };
 
         await _context.UserRoles.AddAsync(userRole);

@@ -1,5 +1,6 @@
 using BotConstructor.Core.DTOs;
 using BotConstructor.Core.Entities;
+using BotConstructor.Core.Models;
 
 namespace BotConstructor.Core.Interfaces;
 

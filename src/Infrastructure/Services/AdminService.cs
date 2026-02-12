@@ -1,6 +1,7 @@
 using BotConstructor.Core.DTOs;
 using BotConstructor.Core.Entities;
 using BotConstructor.Core.Interfaces;
+using BotConstructor.Core.Models;
 using Microsoft.Extensions.Logging;
 
 namespace BotConstructor.Infrastructure.Services;
