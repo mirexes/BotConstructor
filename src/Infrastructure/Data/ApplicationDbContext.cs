@@ -16,6 +16,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<LoginAttempt> LoginAttempts { get; set; } = null!;
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; set; } = null!;
+    public DbSet<UserSession> UserSessions { get; set; } = null!;
+    public DbSet<UserSettings> UserSettings { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +102,37 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User)
                 .WithMany(u => u.EmailConfirmationTokens)
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserSession configuration
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SessionId).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ExpiresAt);
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.IpAddress).IsRequired().HasMaxLength(45);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.UserSessions)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserSettings configuration
+        modelBuilder.Entity<UserSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.Property(e => e.Language).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.TimeZone).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.User)
+                .WithOne(u => u.UserSettings)
+                .HasForeignKey<UserSettings>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

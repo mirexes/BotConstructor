@@ -1,0 +1,101 @@
+@model List<BotConstructor.Core.DTOs.UserSessionDto>
+@{
+    ViewData["Title"] = "Активные сессии";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <!-- Боковое меню -->
+        <div class="list-group">
+            <a asp-action="Index" class="list-group-item list-group-item-action">
+                Профиль
+            </a>
+            <a asp-action="Edit" class="list-group-item list-group-item-action">
+                Редактировать профиль
+            </a>
+            <a asp-action="ChangePassword" class="list-group-item list-group-item-action">
+                Сменить пароль
+            </a>
+            <a asp-action="Settings" class="list-group-item list-group-item-action">
+                Настройки
+            </a>
+            <a asp-action="Sessions" class="list-group-item list-group-item-action active">
+                Активные сессии
+            </a>
+            <a asp-action="DeleteAccount" class="list-group-item list-group-item-action text-danger">
+                Удалить аккаунт
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Активные сессии</h2>
+            @if (Model.Count > 1)
+            {
+                <form asp-action="TerminateAllSessions" method="post" onsubmit="return confirm('Вы уверены, что хотите завершить все остальные сессии?');">
+                    <button type="submit" class="btn btn-danger">Завершить все остальные сессии</button>
+                </form>
+            }
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (Model.Count == 0)
+        {
+            <div class="alert alert-info">
+                Нет активных сессий
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-3">
+                <strong>Всего активных сессий:</strong> @Model.Count
+            </div>
+
+            @foreach (var session in Model)
+            {
+                <div class="card mb-3 @(session.IsCurrent ? "border-primary" : "")">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title">
+                                    @if (session.IsCurrent)
+                                    {
+                                        <span class="badge bg-primary me-2">Текущая сессия</span>
+                                    }
+                                    @(!string.IsNullOrEmpty(session.UserAgent) ? session.UserAgent : "Неизвестное устройство")
+                                </h5>
+                                <p class="card-text mb-1">
+                                    <strong>IP адрес:</strong> @session.IpAddress
+                                </p>
+                                <p class="card-text mb-1">
+                                    <strong>Последняя активность:</strong> @session.LastActivityAt.ToString("dd.MM.yyyy HH:mm")
+                                </p>
+                                <p class="card-text mb-0">
+                                    <strong>Истекает:</strong> @session.ExpiresAt.ToString("dd.MM.yyyy HH:mm")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="alert alert-warning mt-4">
+            <h6>Важная информация:</h6>
+            <ul class="mb-0">
+                <li>Здесь отображаются все активные сессии вашего аккаунта</li>
+                <li>Если вы видите незнакомую сессию, немедленно завершите её и смените пароль</li>
+                <li>Текущая сессия помечена синей меткой</li>
+                <li>Сессии автоматически истекают через 30 дней с момента последней активности</li>
+            </ul>
+        </div>
+    </div>
+</div>
