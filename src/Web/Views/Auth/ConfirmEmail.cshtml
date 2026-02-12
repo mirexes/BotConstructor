@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Подтверждение Email";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header @(ViewBag.Success ? "bg-success" : "bg-danger") text-white">
+                    <h3 class="mb-0">@(ViewBag.Success ? "Успешно!" : "Ошибка")</h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="my-4">
+                        @if (ViewBag.Success)
+                        {
+                            <i class="bi bi-check-circle" style="font-size: 4rem; color: #28a745;"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-circle" style="font-size: 4rem; color: #dc3545;"></i>
+                        }
+                    </div>
+
+                    <p class="lead">@ViewBag.Message</p>
+
+                    <div class="mt-4">
+                        @if (ViewBag.Success)
+                        {
+                            <a asp-action="Login" class="btn btn-success">Войти в систему</a>
+                        }
+                        else
+                        {
+                            <a asp-action="Register" class="btn btn-primary">Зарегистрироваться заново</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
