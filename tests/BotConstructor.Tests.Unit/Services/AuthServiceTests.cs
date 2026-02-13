@@ -79,14 +79,14 @@ public class AuthServiceTests : IDisposable
 
         _userRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<User>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((User u) => u);
 
         _emailServiceMock
             .Setup(x => x.SendEmailConfirmationAsync(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>()))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         // Act - выполнение регистрации
         var result = await _authService.RegisterAsync(dto, "127.0.0.1");
@@ -158,7 +158,7 @@ public class AuthServiceTests : IDisposable
         _userRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<User>()))
             .Callback<User>(user => capturedUser = user)
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((User u) => u);
 
         // Act - регистрация пользователя
         await _authService.RegisterAsync(dto, "127.0.0.1");
@@ -425,7 +425,7 @@ public class AuthServiceTests : IDisposable
 
         _emailServiceMock
             .Setup(x => x.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         // Act - подтверждение email
         var result = await _authService.ConfirmEmailAsync(token);
@@ -513,7 +513,7 @@ public class AuthServiceTests : IDisposable
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>()))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         // Act - запрос на сброс пароля
         var result = await _authService.RequestPasswordResetAsync(dto);
