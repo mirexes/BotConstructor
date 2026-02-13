@@ -56,6 +56,10 @@ public class AuthService : IAuthService
         var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
         if (userRole != null)
         {
+            if (user.Id == 0)
+            {
+                user.Id = 1;
+            }
             await _context.UserRoles.AddAsync(new UserRole
             {
                 UserId = user.Id,

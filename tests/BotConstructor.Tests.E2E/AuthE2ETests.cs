@@ -117,7 +117,7 @@ public class AuthE2ETests : IClassFixture<WebApplicationFactory<Program>>
         // Сценарий: Неавторизованный пользователь пытается получить доступ к защищенной странице
 
         // Попытка доступа к защищенной странице (например, профилю)
-        var response = await _client.GetAsync("/Account/Profile");
+        var response = await _client.GetAsync("/Profile");
 
         // Проверка перенаправления на страницу входа
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Redirect);
