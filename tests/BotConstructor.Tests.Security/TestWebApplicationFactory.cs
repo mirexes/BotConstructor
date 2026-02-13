@@ -48,20 +48,20 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(true);
+                .Returns(Task.CompletedTask);
 
             mockEmailService
                 .Setup(x => x.SendWelcomeEmailAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(true);
+                .Returns(Task.CompletedTask);
 
             mockEmailService
                 .Setup(x => x.SendPasswordResetAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>()))
-                .ReturnsAsync(true);
+                .Returns(Task.CompletedTask);
 
             services.AddSingleton(mockEmailService.Object);
 
