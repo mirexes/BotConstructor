@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace BotConstructor.Web.Controllers;
 
@@ -105,6 +106,85 @@ public class AuthController : Controller
         {
             return Redirect(returnUrl);
         }
+
+        return RedirectToAction("Index", "Home");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+    {
+        var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { returnUrl });
+        var properties = new AuthenticationProperties
+        {
+            RedirectUri = redirectUrl,
+            Items = { { "provider", provider } }
+        };
+        return Challenge(properties, provider);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null)
+    {
+        var result = await HttpContext.AuthenticateAsync("Cookies.External");
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = "Ошибка входа через внешний сервис. Попробуйте ещё раз.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        var principal = result.Principal;
+        var provider = result.Properties?.Items.GetValueOrDefault("provider") ?? "Unknown";
+        var providerKey = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var email = principal.FindFirstValue(ClaimTypes.Email);
+        var firstName = principal.FindFirstValue(ClaimTypes.GivenName);
+        var lastName = principal.FindFirstValue(ClaimTypes.Surname);
+
+        await HttpContext.SignOutAsync("Cookies.External");
+
+        if (string.IsNullOrEmpty(providerKey))
+        {
+            TempData["ErrorMessage"] = "Не удалось получить данные аккаунта от внешнего сервиса.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var serviceResult = await _authService.ExternalLoginAsync(provider, providerKey, email, firstName, lastName, ipAddress);
+
+        if (!serviceResult.Success)
+        {
+            TempData["ErrorMessage"] = serviceResult.Message;
+            return RedirectToAction(nameof(Login));
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, serviceResult.User!.Id.ToString()),
+            new Claim(ClaimTypes.Email, serviceResult.User.Email),
+            new Claim(ClaimTypes.Name, serviceResult.User.FirstName ?? serviceResult.User.Email)
+        };
+
+        foreach (var userRole in serviceResult.User.UserRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+        }
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(12)
+        };
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
+
+        _logger.LogInformation($"User {serviceResult.User.Email} logged in via {provider}");
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
 
         return RedirectToAction("Index", "Home");
     }

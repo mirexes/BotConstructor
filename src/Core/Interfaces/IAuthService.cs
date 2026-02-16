@@ -13,4 +13,7 @@ public interface IAuthService
     Task<User?> GetUserByIdAsync(int userId);
     Task<User?> GetUserByEmailAsync(string email);
     Task<bool> IsEmailConfirmedAsync(string email);
+    Task<(bool Success, string Message, User? User)> ExternalLoginAsync(
+        string provider, string providerKey, string? email,
+        string? firstName, string? lastName, string ipAddress);
 }

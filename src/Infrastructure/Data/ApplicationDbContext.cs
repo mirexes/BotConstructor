@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; set; } = null!;
     public DbSet<UserSession> UserSessions { get; set; } = null!;
     public DbSet<UserSettings> UserSettings { get; set; } = null!;
+    public DbSet<UserExternalLogin> UserExternalLogins { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -133,6 +134,21 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User)
                 .WithOne(u => u.UserSettings)
                 .HasForeignKey<UserSettings>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserExternalLogin configuration
+        modelBuilder.Entity<UserExternalLogin>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.Provider, e.ProviderKey }).IsUnique();
+            entity.Property(e => e.Provider).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ProviderKey).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.ProviderDisplayName).HasMaxLength(255);
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.ExternalLogins)
+                .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

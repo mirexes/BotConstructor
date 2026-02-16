@@ -293,6 +293,120 @@ public class AuthService : IAuthService
         return user?.EmailConfirmed ?? false;
     }
 
+    public async Task<(bool Success, string Message, User? User)> ExternalLoginAsync(
+        string provider, string providerKey, string? email,
+        string? firstName, string? lastName, string ipAddress)
+    {
+        // Check if this external login is already linked to an account
+        var externalLogin = await _context.UserExternalLogins
+            .Include(el => el.User)
+            .ThenInclude(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(el => el.Provider == provider && el.ProviderKey == providerKey);
+
+        if (externalLogin != null)
+        {
+            var existingUser = externalLogin.User;
+
+            if (existingUser.IsBlocked)
+                return (false, $"Ваш аккаунт заблокирован. Причина: {existingUser.BlockedReason}", null);
+
+            existingUser.LastLoginAt = DateTime.UtcNow;
+            existingUser.LastLoginIp = ipAddress;
+            await _userRepository.UpdateAsync(existingUser);
+
+            await _context.LoginAttempts.AddAsync(new LoginAttempt
+            {
+                Email = existingUser.Email,
+                IpAddress = ipAddress,
+                UserId = existingUser.Id,
+                IsSuccessful = true,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            return (true, "Вход выполнен успешно", existingUser);
+        }
+
+        // Try to find existing user by email to link the external login
+        User? user = null;
+        if (!string.IsNullOrEmpty(email))
+        {
+            user = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        if (user == null)
+        {
+            // Create new user — no password needed for social-only accounts
+            var generatedEmail = !string.IsNullOrEmpty(email)
+                ? email
+                : $"{provider.ToLower()}_{providerKey}@external.botconstructor";
+
+            user = new User
+            {
+                Email = generatedEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString(), BcryptWorkFactor),
+                FirstName = firstName,
+                LastName = lastName,
+                EmailConfirmed = true,
+                EmailConfirmedAt = DateTime.UtcNow,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _userRepository.AddAsync(user);
+
+            // Assign default "User" role
+            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+            if (defaultRole != null)
+            {
+                await _context.UserRoles.AddAsync(new UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = defaultRole.Id,
+                    AssignedAt = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+
+            await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName ?? "пользователь");
+        }
+
+        // Link this external login to the user
+        await _context.UserExternalLogins.AddAsync(new UserExternalLogin
+        {
+            UserId = user.Id,
+            Provider = provider,
+            ProviderKey = providerKey,
+            ProviderDisplayName = provider,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        user.LastLoginAt = DateTime.UtcNow;
+        user.LastLoginIp = ipAddress;
+        await _userRepository.UpdateAsync(user);
+
+        await _context.LoginAttempts.AddAsync(new LoginAttempt
+        {
+            Email = user.Email,
+            IpAddress = ipAddress,
+            UserId = user.Id,
+            IsSuccessful = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        // Reload with roles if this was a newly linked account
+        user = await _context.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstAsync(u => u.Id == user.Id);
+
+        return (true, "Вход выполнен успешно", user);
+    }
+
     private static string GenerateToken()
     {
         return Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
